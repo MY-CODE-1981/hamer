@@ -100,8 +100,7 @@ class ObjectDetecton:
         
     def callback(self, image_raw, camera_info):
         print("callback")
-        # now = rospy.Time.now()
-
+        
         img_cv2 = self.bridge.imgmsg_to_cv2(image_raw, desired_encoding='passthrough')
         img_cv2 = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2RGB)
         cv2.imshow("1", img_cv2)
@@ -110,8 +109,7 @@ class ObjectDetecton:
         ##########################
         print("")
         start_time = time.time()
-        # img_cv2 = cv2.imread(str(img_path))
-
+        
         # Detect humans in image
         det_out = detector(img_cv2)
         img = img_cv2.copy()[:, :, ::-1]
@@ -142,10 +140,10 @@ class ObjectDetecton:
             # Rejecting not confident detections
             keyp = left_hand_keyp
             valid = keyp[:,2] > 0.5
-            if sum(valid) > 3:
-                bbox = [keyp[valid,0].min(), keyp[valid,1].min(), keyp[valid,0].max(), keyp[valid,1].max()]
-                bboxes.append(bbox)
-                is_right.append(0)
+            # if sum(valid) > 3:
+            #     bbox = [keyp[valid,0].min(), keyp[valid,1].min(), keyp[valid,0].max(), keyp[valid,1].max()]
+            #     bboxes.append(bbox)
+            #     is_right.append(0)
             keyp = right_hand_keyp
             valid = keyp[:,2] > 0.5
             if sum(valid) > 3:
