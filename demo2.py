@@ -98,7 +98,7 @@ def main():
         bboxes = []
         is_right = []
         
-        end_time = time.time(); print("time0: ", end_time - start_time, " [sec], img_path.shape is ", img_path.shape)
+        end_time = time.time(); print("time0: ", end_time - start_time, " [sec], img_path.shape is ", img_cv2.shape)
         
         start_time = time.time()
 
@@ -129,16 +129,15 @@ def main():
 
         # Run reconstruction on all detected hands
         dataset = ViTDetDataset(model_cfg, img_cv2, boxes, right, rescale_factor=args.rescale_factor)
-        # dataloader = torch.utils.data.DataLoader(dataset, batch_size=8, shuffle=False, num_workers=0)
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
 
         all_verts = []
         all_cam_t = []
         all_right = []
 
-        end_time = time.time(); print("time1: ", end_time - start_time, " [sec]");
+        end_time = time.time(); print("time1: ", end_time - start_time, " [sec]")
 
-        print("len(dataloader): ", len(dataloader))
+        print("len(dataloader): ", len(dataloader), ', len(boxes): ', len(boxes))
         for batch in dataloader:
             start_time = time.time()
             batch = recursive_to(batch, device)
@@ -162,7 +161,7 @@ def main():
             for n in range(batch_size):
                 start_time = time.time()
                 # Get filename from path img_path
-                img_fn, _ = os.path.splitext(os.path.basename(img_path))
+                # img_fn, _ = os.path.splitext(os.path.basename(img_path))
                 person_id = int(batch['personid'][n])
                 white_img = (torch.ones_like(batch['img'][n]).cpu() - DEFAULT_MEAN[:,None,None]/255) / (DEFAULT_STD[:,None,None]/255)
                 input_patch = batch['img'][n].cpu() * (DEFAULT_STD[:,None,None]/255) + (DEFAULT_MEAN[:,None,None]/255)
@@ -174,53 +173,9 @@ def main():
                                         mesh_base_color=LIGHT_BLUE,
                                         scene_bg_color=(1, 1, 1),
                                         )
-
-                if args.side_view:
-                    side_img = renderer(out['pred_vertices'][n].detach().cpu().numpy(),
-                                            out['pred_cam_t'][n].detach().cpu().numpy(),
-                                            white_img,
-                                            mesh_base_color=LIGHT_BLUE,
-                                            scene_bg_color=(1, 1, 1),
-                                            side_view=True)
-                    final_img = np.concatenate([input_patch, regression_img, side_img], axis=1)
-                else:
-                    final_img = np.concatenate([input_patch, regression_img], axis=1)
-
-                # cv2.imwrite(os.path.join(args.out_folder, f'{img_fn}_{person_id}.png'), 255*final_img[:, :, ::-1])
-
-                # # Add all verts and cams to list
-                # verts = out['pred_vertices'][n].detach().cpu().numpy()
-                # is_right = batch['right'][n].cpu().numpy()
-                # verts[:,0] = (2*is_right-1)*verts[:,0]
-                # cam_t = pred_cam_t_full[n]
-                # all_verts.append(verts)
-                # all_cam_t.append(cam_t)
-                # all_right.append(is_right)
-
-                # Save all meshes to disk
-                # if args.save_mesh:
-                #     camera_translation = cam_t.copy()
-                #     tmesh = renderer.vertices_to_trimesh(verts, camera_translation, LIGHT_BLUE, is_right=is_right)
-                #     tmesh.export(os.path.join(args.out_folder, f'{img_fn}_{person_id}.obj'))
+                cv2.imshow("", regression_img)
+                cv2.waitKey(1)
                 end_time = time.time(); print("time3: ", end_time - start_time, " [sec]");# start_time = time.time()
-
-        # Render front view
-        # if args.full_frame and len(all_verts) > 0:
-        #     start_time = time.time()
-        #     misc_args = dict(
-        #         mesh_base_color=LIGHT_BLUE,
-        #         scene_bg_color=(1, 1, 1),
-        #         focal_length=scaled_focal_length,
-        #     )
-        #     cam_view = renderer.render_rgba_multiple(all_verts, cam_t=all_cam_t, render_res=img_size[n], is_right=all_right, **misc_args)
-
-        #     # Overlay image
-        #     input_img = img_cv2.astype(np.float32)[:,:,::-1]/255.0
-        #     input_img = np.concatenate([input_img, np.ones_like(input_img[:,:,:1])], axis=2) # Add alpha channel
-        #     input_img_overlay = input_img[:,:,:3] * (1-cam_view[:,:,3:]) + cam_view[:,:,:3] * cam_view[:,:,3:]
-
-        #     # cv2.imwrite(os.path.join(args.out_folder, f'{img_fn}_all.jpg'), 255*input_img_overlay[:, :, ::-1])
-        #     end_time = time.time(); print("time4: ", end_time - start_time, " [sec]")
 
 if __name__ == '__main__':
     main()
