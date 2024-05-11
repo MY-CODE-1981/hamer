@@ -177,7 +177,7 @@ class Renderer:
                 mesh_base_color=(1.0, 1.0, 0.9),
                 scene_bg_color=(0,0,0),
                 return_rgba=False,
-                ) -> np.array:
+                bbox=[]) -> np.array:
         """
         Render meshes on input image
         Args:
@@ -214,7 +214,7 @@ class Renderer:
             np.radians(180), [1, 0, 0])
         mesh.apply_transform(rot)
         mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
-
+            
         scene = pyrender.Scene(bg_color=[*scene_bg_color, 0.0],
                                ambient_light=(0.3, 0.3, 0.3))
         scene.add(mesh, 'mesh')
@@ -226,6 +226,24 @@ class Renderer:
                                            cx=camera_center[0], cy=camera_center[1], zfar=1e12)
         scene.add(camera, pose=camera_pose)
 
+        # データ保存
+        import os
+        file_name = "output/mesh/np_savez.npz"
+        if not os.path.exists(file_name): # ディレクトリが存在するか確認
+            np.savez(file_name,
+            mesh.primitives[0].positions, # meshes
+            mesh.primitives[0].indices, # faces
+            camera_pose, # camera_pose
+            image.shape, # camera_center
+            self.focal_length, # fx
+            self.focal_length, # fy
+            camera_center[0], # cx
+            camera_center[1], # cy
+            1e12,
+            bbox) # zfar
+            cv2.imwrite("output/mesh/image.jpg", image)
+        else:
+            print("already exist")
 
         light_nodes = create_raymond_lights()
         for node in light_nodes:

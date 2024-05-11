@@ -1,0 +1,18 @@
+cd ~/workspace/recognition_e2dr_project
+source setup2.bash
+roslaunch realsense2_camera rs_rgbd.launch
+
+cd /media/initial/14GB_HDD/myhome_assam_z660_20231108/workspace/hamer
+ros1
+python demo_d435i.py
+
+render.py
+-> mesh.py
+-> mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
+
+mesh.primitives[0].positions
+mesh.primitives[0].indices
+
+scene.add(camera, pose=camera_pose)
+のcamera_poseが大事
+

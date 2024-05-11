@@ -39,7 +39,7 @@ parser.add_argument('--side_view', dest='side_view', action='store_true', defaul
 parser.add_argument('--full_frame', dest='full_frame', action='store_true', default=False, help='If set, render all people together also')
 parser.add_argument('--save_mesh', dest='save_mesh', action='store_true', default=False, help='If set, save meshes to disk also')
 parser.add_argument('--batch_size', type=int, default=1, help='Batch size for inference/fitting')
-parser.add_argument('--rescale_factor', type=float, default=2.0, help='Factor for padding the bbox')
+parser.add_argument('--rescale_factor', type=float, default=1.0, help='Factor for padding the bbox')
 parser.add_argument('--body_detector', type=str, default='vitdet', choices=['vitdet', 'regnety'], help='Using regnety improves runtime and reduces memory')
 parser.add_argument('--file_type', nargs='+', default=['*.jpg', '*.png'], help='List of file extensions to consider')
 
@@ -92,16 +92,16 @@ class ObjectDetecton:
         from cv_bridge import CvBridge
         self.bridge = CvBridge()
 
-        sub_image_raw = message_filters.Subscriber("/camera/color/image_raw", Image)
-        sub_camera_info = message_filters.Subscriber("/camera/color/camera_info", CameraInfo)
+        sub_image_raw = message_filters.Subscriber("/camera_head/image_raw", Image)
+        sub_camera_info = message_filters.Subscriber("/camera_head/camera_info", CameraInfo)
         ts = message_filters.ApproximateTimeSynchronizer([sub_image_raw, sub_camera_info], 2, 0.05)
         ts.registerCallback(self.callback)
-        
+
     def callback(self, image_raw, camera_info):
         print("callback")
         
         img_cv2 = self.bridge.imgmsg_to_cv2(image_raw, desired_encoding='passthrough')
-        img_cv2 = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2RGB)
+        # img_cv2 = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2RGB)
         cv2.imshow("1", img_cv2)
         cv2.waitKey(1)
         
@@ -114,7 +114,8 @@ class ObjectDetecton:
         img = img_cv2.copy()[:, :, ::-1]
 
         det_instances = det_out['instances']
-        valid_idx = (det_instances.pred_classes==0) & (det_instances.scores > 0.5)
+        valid_idx = (det_instances.pred_classes==0) & (det_instances.scores > 0.1) # 
+        # valid_idx = (det_instances.pred_classes==77) & (det_instances.scores > 0.1) # hand
         pred_bboxes=det_instances.pred_boxes.tensor[valid_idx].cpu().numpy()
         pred_scores=det_instances.scores[valid_idx].cpu().numpy()
 
@@ -122,6 +123,7 @@ class ObjectDetecton:
         vitposes_out = cpm.predict_pose(
             img,
             [np.concatenate([pred_bboxes, pred_scores[:, None]], axis=1)],
+            box_score_threshold=0.1
         )
 
         bboxes = []
@@ -133,12 +135,12 @@ class ObjectDetecton:
 
         # Use hands based on hand keypoint detections
         for vitposes in vitposes_out:
-            left_hand_keyp = vitposes['keypoints'][-42:-21]
+            # left_hand_keyp = vitposes['keypoints'][-42:-21]
             right_hand_keyp = vitposes['keypoints'][-21:]
 
             # Rejecting not confident detections
-            keyp = left_hand_keyp
-            valid = keyp[:,2] > 0.5
+            # keyp = left_hand_keyp
+            # valid = keyp[:,2] > 0.5
             # if sum(valid) > 3:
             #     bbox = [keyp[valid,0].min(), keyp[valid,1].min(), keyp[valid,0].max(), keyp[valid,1].max()]
             #     bboxes.append(bbox)
@@ -157,7 +159,7 @@ class ObjectDetecton:
             right = np.stack(is_right)
     
             # Run reconstruction on all detected hands
-            dataset = ViTDetDataset(model_cfg, img_cv2, boxes, right, rescale_factor=1)#args.rescale_factor)
+            dataset = ViTDetDataset(model_cfg, img_cv2, boxes, right, rescale_factor=args.rescale_factor)
             dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=0)
     
             all_verts = []
@@ -201,33 +203,10 @@ class ObjectDetecton:
                                             batch['img'][n],
                                             mesh_base_color=LIGHT_BLUE,
                                             scene_bg_color=(1, 1, 1),
-                                            )
+                                            bbox=bboxes)
                     cv2.imshow("2", regression_img)
                     cv2.waitKey(1)
                     end_time = time.time(); print("time3: ", end_time - start_time, " [sec]");# start_time = time.time()
-                    
-                    verts = out['pred_vertices'][n].detach().cpu().numpy()
-                    is_right = batch['right'][n].cpu().numpy()
-                    verts[:,0] = (2*is_right-1)*verts[:,0]
-                    cam_t = pred_cam_t_full[n]
-                    all_verts.append(verts)
-                    all_cam_t.append(cam_t)
-                    all_right.append(is_right)
-                    
-                    misc_args = dict(
-                        mesh_base_color=LIGHT_BLUE,
-                        scene_bg_color=(1, 1, 1),
-                        focal_length=scaled_focal_length,
-                    )
-                    cam_view = renderer.render_rgba_multiple(all_verts, cam_t=all_cam_t, render_res=img_size[n], is_right=all_right, **misc_args)
-        
-                    # Overlay image
-                    input_img = img_cv2.astype(np.float32)[:,:,::-1]/255.0
-                    input_img = np.concatenate([input_img, np.ones_like(input_img[:,:,:1])], axis=2) # Add alpha channel
-                    input_img_overlay = input_img[:,:,:3] * (1-cam_view[:,:,3:]) + cam_view[:,:,:3] * cam_view[:,:,3:]
-                    input_img_overlay = input_img_overlay[:, :, ::-1]
-                    cv2.imshow("3", input_img_overlay)
-                    cv2.waitKey(1)
         else:
             print("no bbox")
 
