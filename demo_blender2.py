@@ -203,7 +203,8 @@ class ObjectDetecton:
                                             batch['img'][n],
                                             mesh_base_color=LIGHT_BLUE,
                                             scene_bg_color=(1, 1, 1),
-                                            bbox=bboxes)
+                                            bbox=bboxes,
+                                            keyp=keyp)
                     cv2.imshow("2", regression_img)
                     cv2.waitKey(1)
                     end_time = time.time(); print("time3: ", end_time - start_time, " [sec]");# start_time = time.time()

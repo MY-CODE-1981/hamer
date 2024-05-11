@@ -1,11 +1,29 @@
+・d435iの場合
 cd ~/workspace/recognition_e2dr_project
 source setup2.bash
 roslaunch realsense2_camera rs_rgbd.launch
 
 cd /media/initial/14GB_HDD/myhome_assam_z660_20231108/workspace/hamer
+miniconda
+conda activate hamer
 ros1
 python demo_d435i.py
 
+・blender manoハンドの場合
+cd /home/initial/workspace/homer_ws
+source devel/setup.bash
+pyenv local homer
+pyenv global homer
+rosrun homer publish_palm_camera.py 
+
+cd /media/initial/14GB_HDD/myhome_assam_z660_20231108/workspace/hamer
+miniconda
+conda activate hamer
+ros1
+python demo_blender2.py
+
+
+・meshデータの保存
 render.py
 -> mesh.py
 -> mesh = pyrender.Mesh.from_trimesh(mesh, material=material)
@@ -16,3 +34,8 @@ mesh.primitives[0].indices
 scene.add(camera, pose=camera_pose)
 のcamera_poseが大事
 
+/media/initial/14GB_HDD/myhome_assam_z660_20231108/workspace/hamer/output/mesh
+このフォルダを空にすると新しくデータが保存される。ただし一度きり
+
+・データの確認
+python test_mesh_overlay.py

@@ -177,7 +177,8 @@ class Renderer:
                 mesh_base_color=(1.0, 1.0, 0.9),
                 scene_bg_color=(0,0,0),
                 return_rgba=False,
-                bbox=[]) -> np.array:
+                bbox=[],
+                keyp=[]) -> np.array:
         """
         Render meshes on input image
         Args:
@@ -240,7 +241,8 @@ class Renderer:
             camera_center[0], # cx
             camera_center[1], # cy
             1e12,
-            bbox) # zfar
+            bbox,
+            keyp) # zfar
             cv2.imwrite("output/mesh/image.jpg", image)
         else:
             print("already exist")

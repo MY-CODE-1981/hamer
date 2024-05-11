@@ -30,6 +30,7 @@ else:
     cy = data['arr_7']
     zfar = data['arr_8']
     bbox = data['arr_9']
+    keyp = data['arr_10']
 
 
 ###
