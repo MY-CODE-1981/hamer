@@ -86,7 +86,8 @@ os.makedirs(args.out_folder, exist_ok=True)
 img_paths = [img for end in args.file_type for img in Path(args.img_folder).glob(end)]
 
 import time
- 
+from hamer.utils.render_openpose import render_openpose
+
 class ObjectDetecton:
     def __init__(self):
         from cv_bridge import CvBridge
@@ -102,8 +103,8 @@ class ObjectDetecton:
         
         img_cv2 = self.bridge.imgmsg_to_cv2(image_raw, desired_encoding='passthrough')
         # img_cv2 = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2RGB)
-        cv2.imshow("1", img_cv2)
-        cv2.waitKey(1)
+        # cv2.imshow("1", img_cv2)
+        # cv2.waitKey(1)
         
         ##########################
         print("")
@@ -206,8 +207,8 @@ class ObjectDetecton:
                                             scene_bg_color=(1, 1, 1),
                                             bbox=bboxes,
                                             keyp=keyp)
-                    cv2.imshow("2", regression_img)
-                    cv2.waitKey(1)
+                    # cv2.imshow("2", regression_img)
+                    # cv2.waitKey(1)
                     end_time = time.time(); print("time3: ", end_time - start_time, " [sec]");# start_time = time.time()
 
                     verts = out['pred_vertices'][n].detach().cpu().numpy()
@@ -239,16 +240,19 @@ class ObjectDetecton:
                         scene_bg_color=(1, 1, 1),
                         focal_length=scaled_focal_length,
                     )
-
-                    cam_view = renderer.render_rgba_multiple(all_verts, cam_t=all_cam_t, render_res=img_size[n], is_right=all_right, **misc_args)
-
+                    
+                    cam_view = renderer.render_rgba_multiple(all_verts, cam_t=all_cam_t, render_res=img_size[n], is_right=all_right, **misc_args)[0]
+                    
                     # Overlay image
                     input_img = img_cv2.astype(np.float32)[:,:,::-1]/255.0
                     input_img = np.concatenate([input_img, np.ones_like(input_img[:,:,:1])], axis=2) # Add alpha channel
                     input_img_overlay = input_img[:,:,:3] * (1-cam_view[:,:,3:]) + cam_view[:,:,:3] * cam_view[:,:,3:]
 
                     input_img_overlay = input_img_overlay[:, :, ::-1]
+                    gt_keypoints_img = render_openpose(img.copy(), keyp) / 255.
+
                     cv2.imshow("3", input_img_overlay)
+                    cv2.imshow("4", gt_keypoints_img)
                     cv2.waitKey(1)
                     # cv2.imwrite(os.path.join("output/mesh/", 'result.jpg'), 255*input_img_overlay[:, :, ::-1])
         else:
