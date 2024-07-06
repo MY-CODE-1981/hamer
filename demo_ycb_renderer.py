@@ -46,7 +46,7 @@ parser.add_argument('--file_type', nargs='+', default=['*.jpg', '*.png'], help='
 args = parser.parse_args()
 
 # Download and load checkpoints
-download_models(CACHE_DIR_HAMER)
+# download_models(CACHE_DIR_HAMER)
 model, model_cfg = load_hamer(args.checkpoint)
 
 # Setup HaMeR model
@@ -244,15 +244,17 @@ class ObjectDetecton:
                     cam_view = renderer.render_rgba_multiple(all_verts, cam_t=all_cam_t, render_res=img_size[n], is_right=all_right, **misc_args)[0]
                     
                     # Overlay image
+                    
                     input_img = img_cv2.astype(np.float32)[:,:,::-1]/255.0
                     input_img = np.concatenate([input_img, np.ones_like(input_img[:,:,:1])], axis=2) # Add alpha channel
                     input_img_overlay = input_img[:,:,:3] * (1-cam_view[:,:,3:]) + cam_view[:,:,:3] * cam_view[:,:,3:]
 
                     input_img_overlay = input_img_overlay[:, :, ::-1]
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                     gt_keypoints_img = render_openpose(img.copy(), keyp) / 255.
 
-                    cv2.imshow("3", input_img_overlay)
-                    cv2.imshow("4", gt_keypoints_img)
+                    cv2.imshow("3", input_img_overlay) # hand-mesh
+                    cv2.imshow("4", gt_keypoints_img) # hand-skelton
                     cv2.waitKey(1)
                     # cv2.imwrite(os.path.join("output/mesh/", 'result.jpg'), 255*input_img_overlay[:, :, ::-1])
         else:
